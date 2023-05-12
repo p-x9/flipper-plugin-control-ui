@@ -21,16 +21,28 @@ type Events = {
   deviceSize: Size;
 };
 
+type Methods = {
+  sendTouchEvent(event: TouchEvent): Promise<void>;
+};
+
 type Size = {
   width: number;
   height: number;
 }
+type TouchPhase = "began" | "moved" | "ended"
+
+type TouchEvent = {
+  phase: TouchPhase,
+  x: number,
+  y: number
+}
 
 // Read more: https://fbflipper.com/docs/tutorial/js-custom#creating-a-first-plugin
 // API: https://fbflipper.com/docs/extending/flipper-plugin#pluginclient
-export function plugin(client: PluginClient<Events, {}>) {
-  const deviceSize = createState<Size>({width: 375, height:812});
-  const mainWindowSize = createState<Size>({width: 375, height: 812});
+export function plugin(client: PluginClient<Events, Methods>) {
+  const deviceSize = createState<Size>({ width: 375, height: 812 });
+  const mainWindowSize = createState<Size>({ width: 375, height: 812 });
+  const isDragging = createState<boolean>(false);
 
   client.onMessage('deviceSize', (newDeviceSize) => {
     // deviceSize.update((draft) => {
@@ -48,7 +60,15 @@ export function plugin(client: PluginClient<Events, {}>) {
   //   accelerator: 'ctrl+l',
   // });
 
-  return { deviceSize, mainWindowSize };
+  async function sendEvent(touchEvent: TouchEvent) {
+    try {
+      await client.send('sendTouchEvent', touchEvent);
+    } catch (e) {
+      console.error('sdkasdoak', e);
+    }
+  };
+
+  return { deviceSize, mainWindowSize, isDragging, sendEvent, client };
 }
 
 const contaierStyle = {
@@ -72,17 +92,61 @@ export function Component() {
   const instance = usePlugin(plugin);
   const deviceSize = useValue(instance.deviceSize);
   const mainWindowSize = useValue(instance.mainWindowSize);
+  const isDragging = useValue(instance.isDragging);
+
+  const controlWindowRef = React.createRef<HTMLDivElement>()
+
+  const handleMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!controlWindowRef.current) {
+      instance.isDragging.set(false);
+      sendTouchEvent(event, "ended");
+      return
+    }
+    instance.isDragging.set(true);
+
+    sendTouchEvent(event, "began");
+  };
+
+  const handleMouseMoved = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!controlWindowRef.current) {
+      instance.isDragging.set(false);
+      sendTouchEvent(event, "ended");
+      return
+    }
+    if (isDragging) {
+      sendTouchEvent(event, "moved");
+    }
+  };
+
+  const handleMouseUp = (event: React.MouseEvent<HTMLDivElement>) => {
+    instance.isDragging.set(false);
+
+    sendTouchEvent(event, "ended");
+  };
+
+  const sendTouchEvent = async (event: React.MouseEvent<HTMLDivElement>, phase: TouchPhase) => {
+    if (!controlWindowRef.current) {
+      return
+    }
+    const rect = controlWindowRef.current.getBoundingClientRect();
+    const scale = rect.height / deviceSize.height;
+    const x = (event.clientX - rect.left) / scale;
+    const y = (event.clientY - rect.top) / scale;
+
+    console.log(`${phase} X: ${x}, Y: ${y}`);
+    const result = await instance.sendEvent({ phase: phase, x: x, y: y });
+  };
 
   return (
     <Layout.Container grow padh="small" padv="medium">
       <Layout.Container grow padh="small" padv="medium">
         <Layout.Top>
           <ResizablePanel position='top' minHeight={200} height={mainWindowSize.height} maxHeight={800} width={mainWindowSize.width} gutter onResize={(width, height) => {
-            instance.mainWindowSize.set({width: width, height: height});
+            instance.mainWindowSize.set({ width: width, height: height });
           }}>
             <Layout.Container grow style={{ height: "100%", width: "100%", position: 'relative' }}>
               <AspectRatioCard aspectRatio={deviceSize.width / deviceSize.height} parentSize={mainWindowSize} style={centerInnerStyle}>
-                <div style={contaierStyle}></div>
+                <div ref={controlWindowRef} onMouseDown={handleMouseDown} onMouseMove={handleMouseMoved} onMouseUp={handleMouseUp} style={contaierStyle}></div>
               </AspectRatioCard>
             </Layout.Container>
           </ResizablePanel>
@@ -99,36 +163,6 @@ export function Component() {
     </Layout.Container>
   );
 }
-
-interface FixedAspectRatioCardProps {
-  aspectRatio: number;
-  children: React.ReactNode;
-}
-
-const FixedAspectRatioCard = ({
-  aspectRatio,
-  children,
-}: FixedAspectRatioCardProps) => {
-  return (
-    <div style={{ position: 'relative', width: '100%' }}>
-      <div style={{ paddingTop: `${(1 / aspectRatio) * 100}%` }} />
-      <Card
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-        }}
-      >
-        {children}
-      </Card>
-    </div>
-  );
-};
-
-export default FixedAspectRatioCard;
-
 
 interface AspectRatioCardProps {
   aspectRatio: number;
