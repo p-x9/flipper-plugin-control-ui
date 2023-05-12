@@ -1,4 +1,5 @@
 import React from 'react';
+
 import {
   Row,
   Col,
@@ -41,7 +42,7 @@ type TouchEvent = {
 // API: https://fbflipper.com/docs/extending/flipper-plugin#pluginclient
 export function plugin(client: PluginClient<Events, Methods>) {
   const deviceSize = createState<Size>({ width: 375, height: 812 });
-  const mainWindowSize = createState<Size>({ width: 375, height: 812 });
+  const mainWindowSize = createState<Size>({ width: window.innerWidth - 300, height: window.innerHeight - 400 });
   const isDragging = createState<boolean>(false);
 
   client.onMessage('deviceSize', (newDeviceSize) => {
@@ -94,7 +95,7 @@ export function Component() {
   const mainWindowSize = useValue(instance.mainWindowSize);
   const isDragging = useValue(instance.isDragging);
 
-  const controlWindowRef = React.createRef<HTMLDivElement>()
+  const controlWindowRef = React.createRef<HTMLDivElement>();
 
   const handleMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!controlWindowRef.current) {
@@ -150,13 +151,15 @@ export function Component() {
               </AspectRatioCard>
             </Layout.Container>
           </ResizablePanel>
+
           <ResizablePanel position='bottom' minHeight={200} height={400}>
             <h1>Log Window</h1>
           </ResizablePanel>
+
         </Layout.Top>
       </Layout.Container>
 
-      <DetailSidebar>
+      <DetailSidebar width={400}>
         <h1>Preference Window</h1>
       </DetailSidebar>
 
