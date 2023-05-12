@@ -166,8 +166,17 @@ export function Component() {
     const y = (event.clientY - rect.top) / scale;
 
     console.log(`${phase} X: ${x}, Y: ${y}`);
-    instance.eventLogs.append({date: new Date(), type:'touch', message:`${phase} x: ${x.toFixed(2)}, y: ${y.toFixed(2)}`});
-    const result = await instance.sendEvent({ phase: phase, x: x, y: y });
+
+    if(x < 0 || y<0 || x>deviceSize.width || y>deviceSize.height) {
+      if (isDragging) {
+        instance.isDragging.set(false)
+        instance.eventLogs.append({date: new Date(), type:'touch', message:`${'ended'} x: ${x.toFixed(2)}, y: ${y.toFixed(2)}`});
+        const result = await instance.sendEvent({ phase: 'ended', x: x, y: y });
+      }
+    } else {
+      instance.eventLogs.append({date: new Date(), type:'touch', message:`${phase} x: ${x.toFixed(2)}, y: ${y.toFixed(2)}`});
+      const result = await instance.sendEvent({ phase: phase, x: x, y: y });
+    }
   };
 
   return (
@@ -179,7 +188,7 @@ export function Component() {
           }}>
             <Layout.Container grow style={{ height: "100%", width: "100%", position: 'relative' }}>
               <AspectRatioCard aspectRatio={deviceSize.width / deviceSize.height} parentSize={mainWindowSize} style={centerInnerStyle}>
-                <div ref={controlWindowRef} onMouseDown={handleMouseDown} onMouseMove={handleMouseMoved} onMouseUp={handleMouseUp} style={contaierStyle}></div>
+                <div ref={controlWindowRef} onMouseDown={handleMouseDown} onMouseMove={handleMouseMoved} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} style={contaierStyle}></div>
               </AspectRatioCard>
             </Layout.Container>
           </ResizablePanel>
