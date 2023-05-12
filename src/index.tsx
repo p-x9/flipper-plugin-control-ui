@@ -15,15 +15,25 @@ import {
   Layout,
   styled,
   _Sidebar as ResizablePanel,
-  DetailSidebar
+  DetailSidebar,
+  DataTableColumn,
+  DataTable,
+  createDataSource
 } from 'flipper-plugin';
 
 type Events = {
   deviceSize: Size;
+  newEventLog: EventLog;
 };
 
 type Methods = {
   sendTouchEvent(event: TouchEvent): Promise<void>;
+};
+
+type EventLog = {
+  date: Date;
+  type: string;
+  message?: string;
 };
 
 type Size = {
@@ -45,6 +55,8 @@ export function plugin(client: PluginClient<Events, Methods>) {
   const mainWindowSize = createState<Size>({ width: window.innerWidth - 300, height: window.innerHeight - 400 });
   const isDragging = createState<boolean>(false);
 
+  const eventLogs = createDataSource<EventLog>([]);
+
   client.onMessage('deviceSize', (newDeviceSize) => {
     // deviceSize.update((draft) => {
     //   draft = newDeviceSize;
@@ -53,13 +65,13 @@ export function plugin(client: PluginClient<Events, Methods>) {
     console.log(deviceSize)
   });
 
-  // client.addMenuEntry({
-  //   action: 'clear',
-  //   handler: async () => {
-  //     data.set({});
-  //   },
-  //   accelerator: 'ctrl+l',
-  // });
+  client.addMenuEntry({
+    action: 'clear',
+    handler: async () => {
+      eventLogs.clear();
+    },
+    accelerator: 'ctrl+l',
+  });
 
   async function sendEvent(touchEvent: TouchEvent) {
     try {
@@ -69,7 +81,7 @@ export function plugin(client: PluginClient<Events, Methods>) {
     }
   };
 
-  return { deviceSize, mainWindowSize, isDragging, sendEvent, client };
+  return { deviceSize, mainWindowSize, isDragging, eventLogs, sendEvent, client };
 }
 
 const contaierStyle = {
@@ -86,6 +98,25 @@ const centerInnerStyle: React.CSSProperties = {
   right: 0,
   margin: 'auto'
 }
+
+const columns:DataTableColumn<EventLog>[] = [
+  {
+  title: 'Date',
+  key: 'date',
+  width: 120
+  },
+  {
+  title: 'Type',
+  key: 'type',
+  width: 100
+  },
+  {
+  title: 'Message',
+  key: 'message',
+  wrap: true
+  },
+];
+
 
 // Read more: https://fbflipper.com/docs/tutorial/js-custom#building-a-user-interface-for-the-plugin
 // API: https://fbflipper.com/docs/extending/flipper-plugin#react-hooks
@@ -135,6 +166,7 @@ export function Component() {
     const y = (event.clientY - rect.top) / scale;
 
     console.log(`${phase} X: ${x}, Y: ${y}`);
+    instance.eventLogs.append({date: new Date(), type:'touch', message:`${phase} x: ${x.toFixed(2)}, y: ${y.toFixed(2)}`});
     const result = await instance.sendEvent({ phase: phase, x: x, y: y });
   };
 
@@ -153,14 +185,14 @@ export function Component() {
           </ResizablePanel>
 
           <ResizablePanel position='bottom' minHeight={200} height={400}>
-            <h1>Log Window</h1>
+            <h1>Preference Window</h1>
           </ResizablePanel>
 
         </Layout.Top>
       </Layout.Container>
 
-      <DetailSidebar width={400}>
-        <h1>Preference Window</h1>
+      <DetailSidebar width={500}>
+        <DataTable columns={columns} dataSource={instance.eventLogs} enableAutoScroll></DataTable>
       </DetailSidebar>
 
     </Layout.Container>
