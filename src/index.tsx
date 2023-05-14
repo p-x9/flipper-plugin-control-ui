@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { ChangeEvent, useEffect } from 'react';
 
 import {
-  Row,
-  Col,
-  Card,
-  Divider,
+  Input,
+  Button,
 } from 'antd';
+
+const {
+  TextArea,
+} = Input
 
 import {
   PluginClient,
@@ -18,7 +20,7 @@ import {
   DetailSidebar,
   DataTableColumn,
   DataTable,
-  createDataSource
+  createDataSource,
 } from 'flipper-plugin';
 
 type Events = {
@@ -28,11 +30,12 @@ type Events = {
 
 type Methods = {
   sendTouchEvent(event: TouchEvent): Promise<void>;
+  sendKeyEvent(event: KeyEvent): Promise<void>;
 };
 
 type EventLog = {
   date: Date;
-  type: string;
+  type: "touch" | "key";
   message?: string;
 };
 
@@ -48,6 +51,8 @@ type TouchEvent = {
   y: number
 }
 
+type KeyEvent = { text: { _0: string } } | { escape: {} } | { delete: {} } | { tab: {} } | { enter: {} }
+
 // Read more: https://fbflipper.com/docs/tutorial/js-custom#creating-a-first-plugin
 // API: https://fbflipper.com/docs/extending/flipper-plugin#pluginclient
 export function plugin(client: PluginClient<Events, Methods>) {
@@ -58,9 +63,6 @@ export function plugin(client: PluginClient<Events, Methods>) {
   const eventLogs = createDataSource<EventLog>([]);
 
   client.onMessage('deviceSize', (newDeviceSize) => {
-    // deviceSize.update((draft) => {
-    //   draft = newDeviceSize;
-    // });
     deviceSize.set(newDeviceSize)
     console.log(deviceSize)
   });
@@ -73,15 +75,23 @@ export function plugin(client: PluginClient<Events, Methods>) {
     accelerator: 'ctrl+l',
   });
 
-  async function sendEvent(touchEvent: TouchEvent) {
+  async function sendTouchEvent(event: TouchEvent) {
     try {
-      await client.send('sendTouchEvent', touchEvent);
+      await client.send('sendTouchEvent', event);
     } catch (e) {
-      console.error('sdkasdoak', e);
+      console.error(e);
     }
   };
 
-  return { deviceSize, mainWindowSize, isDragging, eventLogs, sendEvent, client };
+  async function sendKeyEvent(event: KeyEvent) {
+    try {
+      await client.send('sendKeyEvent', event);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  return { deviceSize, mainWindowSize, isDragging, eventLogs, sendTouchEvent, sendKeyEvent, client };
 }
 
 const contaierStyle = {
@@ -128,6 +138,28 @@ export function Component() {
 
   const controlWindowRef = React.createRef<HTMLDivElement>();
 
+  const textToSend = createState<string>('');
+
+  //   useEffect(() => {
+  //     document.addEventListener('keydown', handleKeyDownEvent);
+  //     document.addEventListener('keyup', handleKeyUpEvent);
+
+  //     return () => {
+  //         document.removeEventListener('keydown', handleKeyDownEvent);
+  //         document.removeEventListener('keyup', handleKeyUpEvent);
+  //     };
+  // }, []);
+
+  //   const handleKeyDownEvent = (event: KeyboardEvent) => {
+  //     console.log(`Key pressed: ${event.key} ${event.code}`);
+  //     sendKeyEvent(event, true)
+  //   };
+
+  //   const handleKeyUpEvent = (event: KeyboardEvent) => {
+  //     console.log(`Key pressed: ${event.key} ${event.code}`);
+  //     sendKeyEvent(event, false)
+  //   };
+
   const handleMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!controlWindowRef.current) {
       instance.isDragging.set(false);
@@ -156,6 +188,15 @@ export function Component() {
     sendTouchEvent(event, "ended");
   };
 
+  const handleInputText = (event: ChangeEvent<HTMLTextAreaElement>) => {
+    textToSend.set(event.target.value);
+  };
+
+  const handleSendClick = () => {
+    const text = textToSend.get()
+    sendKeyEvent({ text: { _0: text } });
+  }
+
   const sendTouchEvent = async (event: React.MouseEvent<HTMLDivElement>, phase: TouchPhase) => {
     if (!controlWindowRef.current) {
       return
@@ -171,17 +212,23 @@ export function Component() {
       if (isDragging) {
         instance.isDragging.set(false)
         instance.eventLogs.append({ date: new Date(), type: 'touch', message: `${'ended'} x: ${x.toFixed(2)}, y: ${y.toFixed(2)}` });
-        const result = await instance.sendEvent({ phase: 'ended', x: x, y: y });
+        const result = await instance.sendTouchEvent({ phase: 'ended', x: x, y: y });
       }
     } else {
       instance.eventLogs.append({ date: new Date(), type: 'touch', message: `${phase} x: ${x.toFixed(2)}, y: ${y.toFixed(2)}` });
-      const result = await instance.sendEvent({ phase: phase, x: x, y: y });
+      const result = await instance.sendTouchEvent({ phase: phase, x: x, y: y });
     }
   };
 
+  const sendKeyEvent = (event: KeyEvent) => {
+    instance.eventLogs.append({ date: new Date(), type: 'key', message: JSON.stringify(event) });
+    instance.sendKeyEvent(event);
+  }
+
   return (
-    <Layout.Container grow padh="small" padv="medium">
+    <Layout.Container grow padh="small">
       <Layout.Container grow padh="small" padv="medium">
+        <SmallHeading style={{ marginTop: '4px' }}>Touch Event</SmallHeading>
         <Layout.Top>
           <ResizablePanel position='top' minHeight={200} height={mainWindowSize.height} maxHeight={800} width={mainWindowSize.width} gutter onResize={(width, height) => {
             instance.mainWindowSize.set({ width: width, height: height });
@@ -201,7 +248,17 @@ export function Component() {
           </ResizablePanel>
 
           <ResizablePanel position='bottom' minHeight={200} height={400}>
-            <h1>Preference Window</h1>
+            <SmallHeading style={{ marginTop: '4px' }}>Keyboard Event</SmallHeading>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              <TextArea rows={4} onChange={handleInputText} />
+              <Button onClick={handleSendClick} style={{ marginTop: 'auto' }}>Send</Button>
+            </div>
+            <div style={{ display: 'flex', gap: '4px', margin: '4px'}}>
+              <Button onClick={() => { sendKeyEvent({ escape: {} }) }}>Escape</Button>
+              <Button onClick={() => { sendKeyEvent({ tab: {} }) }}>Tab</Button>
+              <Button onClick={() => { sendKeyEvent({ enter: {} }) }}>Enter</Button>
+              <Button onClick={() => { sendKeyEvent({ delete: {} }) }}>Delete</Button>
+            </div>
           </ResizablePanel>
 
         </Layout.Top>
@@ -233,3 +290,19 @@ const AspectRatioCard: React.FC<AspectRatioCardProps> = ({ aspectRatio, parentSi
     </div>
   );
 };
+
+const LargeHeading = styled.div({
+  fontSize: 18,
+  fontWeight: 'bold',
+  lineHeight: '20px',
+  borderBottom: '1px solid #ddd',
+  marginBottom: 10,
+});
+
+const SmallHeading = styled.div({
+  fontSize: 12,
+  color: '#90949c',
+  fontWeight: 'bold',
+  marginBottom: 10,
+  textTransform: 'uppercase',
+});
