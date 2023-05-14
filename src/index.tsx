@@ -99,21 +99,21 @@ const centerInnerStyle: React.CSSProperties = {
   margin: 'auto'
 }
 
-const columns:DataTableColumn<EventLog>[] = [
+const columns: DataTableColumn<EventLog>[] = [
   {
-  title: 'Date',
-  key: 'date',
-  width: 120
+    title: 'Date',
+    key: 'date',
+    width: 120
   },
   {
-  title: 'Type',
-  key: 'type',
-  width: 100
+    title: 'Type',
+    key: 'type',
+    width: 100
   },
   {
-  title: 'Message',
-  key: 'message',
-  wrap: true
+    title: 'Message',
+    key: 'message',
+    wrap: true
   },
 ];
 
@@ -167,14 +167,14 @@ export function Component() {
 
     console.log(`${phase} X: ${x}, Y: ${y}`);
 
-    if(x < 0 || y<0 || x>deviceSize.width || y>deviceSize.height) {
+    if (x < 0 || y < 0 || x > deviceSize.width || y > deviceSize.height) {
       if (isDragging) {
         instance.isDragging.set(false)
-        instance.eventLogs.append({date: new Date(), type:'touch', message:`${'ended'} x: ${x.toFixed(2)}, y: ${y.toFixed(2)}`});
+        instance.eventLogs.append({ date: new Date(), type: 'touch', message: `${'ended'} x: ${x.toFixed(2)}, y: ${y.toFixed(2)}` });
         const result = await instance.sendEvent({ phase: 'ended', x: x, y: y });
       }
     } else {
-      instance.eventLogs.append({date: new Date(), type:'touch', message:`${phase} x: ${x.toFixed(2)}, y: ${y.toFixed(2)}`});
+      instance.eventLogs.append({ date: new Date(), type: 'touch', message: `${phase} x: ${x.toFixed(2)}, y: ${y.toFixed(2)}` });
       const result = await instance.sendEvent({ phase: phase, x: x, y: y });
     }
   };
@@ -188,7 +188,14 @@ export function Component() {
           }}>
             <Layout.Container grow style={{ height: "100%", width: "100%", position: 'relative' }}>
               <AspectRatioCard aspectRatio={deviceSize.width / deviceSize.height} parentSize={mainWindowSize} style={centerInnerStyle}>
-                <div ref={controlWindowRef} onMouseDown={handleMouseDown} onMouseMove={handleMouseMoved} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} style={contaierStyle}></div>
+                <div
+                  ref={controlWindowRef}
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMoved}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                  style={contaierStyle}>
+                </div>
               </AspectRatioCard>
             </Layout.Container>
           </ResizablePanel>
