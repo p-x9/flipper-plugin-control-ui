@@ -250,7 +250,7 @@ export function Component() {
           <ResizablePanel position='bottom' minHeight={200} height={400}>
             <SmallHeading style={{ marginTop: '4px' }}>Keyboard Event</SmallHeading>
             <div style={{ display: 'flex', gap: '4px' }}>
-              <TextArea rows={4} onChange={handleInputText} />
+              <TextArea rows={6} allowClear onChange={handleInputText} />
               <Button onClick={handleSendClick} style={{ marginTop: 'auto' }}>Send</Button>
             </div>
             <div style={{ display: 'flex', gap: '4px', margin: '4px'}}>
