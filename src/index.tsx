@@ -23,6 +23,16 @@ import {
   createDataSource,
 } from 'flipper-plugin';
 
+import Heading from './Heading'
+
+import {
+  TouchEvent,
+  TouchPhase,
+  KeyEvent,
+  EventLog,
+  Size
+} from './types'
+
 type Events = {
   deviceSize: Size;
   newEventLog: EventLog;
@@ -33,25 +43,6 @@ type Methods = {
   sendKeyEvent(event: KeyEvent): Promise<void>;
 };
 
-type EventLog = {
-  date: Date;
-  type: "touch" | "key";
-  message?: string;
-};
-
-type Size = {
-  width: number;
-  height: number;
-}
-type TouchPhase = "began" | "moved" | "ended"
-
-type TouchEvent = {
-  phase: TouchPhase,
-  x: number,
-  y: number
-}
-
-type KeyEvent = { text: { _0: string } } | { escape: {} } | { delete: {} } | { tab: {} } | { enter: {} }
 
 // Read more: https://fbflipper.com/docs/tutorial/js-custom#creating-a-first-plugin
 // API: https://fbflipper.com/docs/extending/flipper-plugin#pluginclient
@@ -91,7 +82,15 @@ export function plugin(client: PluginClient<Events, Methods>) {
     }
   };
 
-  return { deviceSize, mainWindowSize, isDragging, eventLogs, sendTouchEvent, sendKeyEvent, client };
+  return {
+    deviceSize,
+    mainWindowSize,
+    isDragging,
+    eventLogs,
+    sendTouchEvent,
+    sendKeyEvent,
+    client
+  };
 }
 
 const contaierStyle = {
@@ -139,26 +138,6 @@ export function Component() {
   const controlWindowRef = React.createRef<HTMLDivElement>();
 
   const textToSend = createState<string>('');
-
-  //   useEffect(() => {
-  //     document.addEventListener('keydown', handleKeyDownEvent);
-  //     document.addEventListener('keyup', handleKeyUpEvent);
-
-  //     return () => {
-  //         document.removeEventListener('keydown', handleKeyDownEvent);
-  //         document.removeEventListener('keyup', handleKeyUpEvent);
-  //     };
-  // }, []);
-
-  //   const handleKeyDownEvent = (event: KeyboardEvent) => {
-  //     console.log(`Key pressed: ${event.key} ${event.code}`);
-  //     sendKeyEvent(event, true)
-  //   };
-
-  //   const handleKeyUpEvent = (event: KeyboardEvent) => {
-  //     console.log(`Key pressed: ${event.key} ${event.code}`);
-  //     sendKeyEvent(event, false)
-  //   };
 
   const handleMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!controlWindowRef.current) {
@@ -228,12 +207,21 @@ export function Component() {
   return (
     <Layout.Container grow padh="small">
       <Layout.Container grow padh="small" padv="medium">
-        <SmallHeading style={{ marginTop: '4px' }}>Touch Event</SmallHeading>
+        <Heading style={{ marginTop: '4px' }}>Touch Event</Heading>
         <Layout.Top>
-          <ResizablePanel position='top' minHeight={200} height={mainWindowSize.height} maxHeight={window.innerHeight - 320} width={mainWindowSize.width} gutter onResize={(width, height) => {
-            instance.mainWindowSize.set({ width: width, height: height });
-          }}>
-            <Layout.Container grow style={{ height: "100%", width: "100%", position: 'relative' }}>
+          <ResizablePanel
+            position='top'
+            minHeight={200}
+            height={mainWindowSize.height}
+            maxHeight={window.innerHeight - 320}
+            width={mainWindowSize.width}
+            gutter
+            onResize={(width, height) => {
+              instance.mainWindowSize.set({ width: width, height: height });
+            }}>
+            <Layout.Container
+              grow
+              style={{ height: "100%", width: "100%", position: 'relative' }}>
               <AspectRatioCard aspectRatio={deviceSize.width / deviceSize.height} parentSize={mainWindowSize} style={centerInnerStyle}>
                 <div
                   ref={controlWindowRef}
@@ -248,12 +236,12 @@ export function Component() {
           </ResizablePanel>
 
           <ResizablePanel position='bottom' minHeight={320} height={320}>
-            <SmallHeading style={{ marginTop: '4px' }}>Keyboard Event</SmallHeading>
+            <Heading style={{ marginTop: '4px' }}>Keyboard Event</Heading>
             <div style={{ display: 'flex', gap: '4px' }}>
               <TextArea rows={6} allowClear onChange={handleInputText} />
               <Button onClick={handleSendClick} style={{ marginTop: 'auto' }}>Send</Button>
             </div>
-            <div style={{ display: 'flex', gap: '4px', margin: '4px'}}>
+            <div style={{ display: 'flex', gap: '4px', margin: '4px' }}>
               <Button onClick={() => { sendKeyEvent({ escape: {} }) }}>Escape</Button>
               <Button onClick={() => { sendKeyEvent({ tab: {} }) }}>Tab</Button>
               <Button onClick={() => { sendKeyEvent({ enter: {} }) }}>Enter</Button>
@@ -291,18 +279,3 @@ const AspectRatioCard: React.FC<AspectRatioCardProps> = ({ aspectRatio, parentSi
   );
 };
 
-const LargeHeading = styled.div({
-  fontSize: 18,
-  fontWeight: 'bold',
-  lineHeight: '20px',
-  borderBottom: '1px solid #ddd',
-  marginBottom: 10,
-});
-
-const SmallHeading = styled.div({
-  fontSize: 12,
-  color: '#90949c',
-  fontWeight: 'bold',
-  marginBottom: 10,
-  textTransform: 'uppercase',
-});
