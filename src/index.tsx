@@ -230,7 +230,7 @@ export function Component() {
       <Layout.Container grow padh="small" padv="medium">
         <SmallHeading style={{ marginTop: '4px' }}>Touch Event</SmallHeading>
         <Layout.Top>
-          <ResizablePanel position='top' minHeight={200} height={mainWindowSize.height} maxHeight={800} width={mainWindowSize.width} gutter onResize={(width, height) => {
+          <ResizablePanel position='top' minHeight={200} height={mainWindowSize.height} maxHeight={window.innerHeight - 320} width={mainWindowSize.width} gutter onResize={(width, height) => {
             instance.mainWindowSize.set({ width: width, height: height });
           }}>
             <Layout.Container grow style={{ height: "100%", width: "100%", position: 'relative' }}>
@@ -247,7 +247,7 @@ export function Component() {
             </Layout.Container>
           </ResizablePanel>
 
-          <ResizablePanel position='bottom' minHeight={200} height={400}>
+          <ResizablePanel position='bottom' minHeight={320} height={320}>
             <SmallHeading style={{ marginTop: '4px' }}>Keyboard Event</SmallHeading>
             <div style={{ display: 'flex', gap: '4px' }}>
               <TextArea rows={6} allowClear onChange={handleInputText} />
