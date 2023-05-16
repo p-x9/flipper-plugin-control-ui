@@ -8,7 +8,7 @@ Flipper plug-in that can send TouchEvent and Keyboard events from PC to iPhone. 
 [![Github stars](https://img.shields.io/github/stars/p-x9/flipper-plugin-control-ui)](https://github.com/p-x9/flipper-plugin-control-ui/stargazers)
 [![Github top language](https://img.shields.io/github/languages/top/p-x9/flipper-plugin-control-ui)](https://github.com/p-x9/flipper-plugin-control-ui/)
 
-<img width="2032" alt="Desktop" src="https://github.com/p-x9/FlipperControlUIPlugin-iOS/assets/50244599/d0388de0-c37d-429e-be5e-5bf4ef45ec29">
+<img width="2032" alt="Desktop" src="https://github.com/p-x9/flipper-plugin-control-ui/assets/50244599/537ee230-c572-430e-a578-57ae71698246">
 
 ## Installation
 Download .tgz file from [Release Page](https://github.com/p-x9/flipper-plugin-control-ui/releases) and Install from the Flipper app's plugin manager.
